@@ -1,0 +1,44 @@
+MIT License
+
+Copyright (c) 2026 David Zimmer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+----------------------------------------------------------------------
+
+This package wraps SQLite, which is in the public domain. The SQLite
+source code itself is not covered by this license — see https://sqlite.org
+for SQLite's own terms (which are: there are none, do whatever you want).
+
+The components covered by this MIT license are the wrapper layer between
+VB6 and SQLite, including:
+
+  - sqlite3_vb6.c       (C stdcall shim)
+  - sqlite3_vb6.def     (export definitions)
+  - modSQLite.bas       (VB6 declares and helpers)
+  - cSQLite.cls         (connection class)
+  - cSQLiteStatement.cls (prepared statement class)
+  - cSQLiteResults.cls  (result set iterator)
+  - cSQLiteSchema.cls   (schema introspection and DDL)
+  - cSQLiteColumn.cls   (column metadata)
+  - cSQLiteAPI.cls      (global low-level API surface)
+  - cFileRecord.cls     (record helper used by the export form)
+
+  and any other VB6 / Python source files distributed alongside this
+  LICENSE file.

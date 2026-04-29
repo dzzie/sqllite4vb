@@ -1,0 +1,7 @@
+modSQLite = 52, 52, 819, 588, 
+cSQLite = 78, 78, 845, 614, 
+cSQLiteStatement = 104, 104, 871, 640, 
+cSQLiteResults = 156, 156, 923, 692, 
+cSQLiteSchema = 0, 0, 0, 0, C
+cSQLiteColumn = 130, 130, 897, 666, 
+cSQLiteAPI = 26, 26, 793, 562, 

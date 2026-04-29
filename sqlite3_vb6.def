@@ -1,0 +1,74 @@
+; sqlite3_vb6.def
+;
+; Module definition for the VB6-friendly SQLite shim DLL.
+; Lists exports without name decoration so VB6 Declare statements
+; can bind by simple name (no _Foo@N alias dance).
+;
+; In MSVC: Project Properties -> Linker -> Input ->
+;          Module Definition File: sqlite3_vb6.def
+
+LIBRARY sqlite3_vb6
+
+EXPORTS
+    ; --- library lifecycle / version ---
+    vb6_sqlite3_libversion
+    vb6_sqlite3_libversion_number
+    vb6_sqlite3_threadsafe
+    vb6_sqlite3_initialize
+    vb6_sqlite3_shutdown
+
+    ; --- connection ---
+    vb6_sqlite3_open
+    vb6_sqlite3_open_v2
+    vb6_sqlite3_close
+    vb6_sqlite3_close_v2
+
+    ; --- error reporting ---
+    vb6_sqlite3_errcode
+    vb6_sqlite3_extended_errcode
+    vb6_sqlite3_errmsg
+    vb6_sqlite3_errstr
+
+    ; --- exec ---
+    vb6_sqlite3_exec_simple
+
+    ; --- prepared statements ---
+    vb6_sqlite3_prepare_v2
+    vb6_sqlite3_step
+    vb6_sqlite3_reset
+    vb6_sqlite3_finalize
+    vb6_sqlite3_clear_bindings
+
+    ; --- bind ---
+    vb6_sqlite3_bind_parameter_count
+    vb6_sqlite3_bind_parameter_index
+    vb6_sqlite3_bind_null
+    vb6_sqlite3_bind_int
+    vb6_sqlite3_bind_int64
+    vb6_sqlite3_bind_double
+    vb6_sqlite3_bind_text
+    vb6_sqlite3_bind_blob
+    vb6_sqlite3_bind_zeroblob
+
+    ; --- column metadata ---
+    vb6_sqlite3_column_count
+    vb6_sqlite3_data_count
+    vb6_sqlite3_column_name
+    vb6_sqlite3_column_decltype
+    vb6_sqlite3_column_type
+
+    ; --- column values ---
+    vb6_sqlite3_column_int
+    vb6_sqlite3_column_int64
+    vb6_sqlite3_column_double
+    vb6_sqlite3_column_text
+    vb6_sqlite3_column_bytes
+    vb6_sqlite3_column_blob_copy
+
+    ; --- misc ---
+    vb6_sqlite3_last_insert_rowid
+    vb6_sqlite3_changes
+    vb6_sqlite3_total_changes
+    vb6_sqlite3_busy_timeout
+    vb6_sqlite3_get_autocommit
+    vb6_sqlite3_interrupt
