@@ -261,28 +261,32 @@ __declspec(dllexport) VARIANT __stdcall vb6_sqlite3_errstr(int rc) {
 ** VB6 declares this ByRef ... As String and gets a String back.
 */
 __declspec(dllexport) int __stdcall vb6_sqlite3_exec_simple(
-    sqlite3 *db,
-    const wchar_t *zSql,
-    BSTR *pzErrMsg
+	sqlite3* db,
+	const wchar_t* zSql,
+	VARIANT* pzErrMsg     /* was BSTR* */
 ) {
-    char *sql, *err = NULL;
-    int rc;
+	char* sql, * err = NULL;
+	int rc;
 
-    if (db == NULL) return SQLITE_MISUSE;
-    if (pzErrMsg) *pzErrMsg = NULL;
+	if (db == NULL) return SQLITE_MISUSE;
+	if (pzErrMsg) {
+		VariantInit(pzErrMsg);
+		pzErrMsg->vt = VT_NULL;
+	}
 
-    sql = wide_to_utf8(zSql);
-    if (zSql != NULL && sql == NULL) return SQLITE_NOMEM;
+	sql = wide_to_utf8(zSql);
+	if (zSql != NULL && sql == NULL) return SQLITE_NOMEM;
 
-    rc = sqlite3_exec(db, sql ? sql : "", NULL, NULL, &err);
-    sqlite3_free(sql);
+	rc = sqlite3_exec(db, sql ? sql : "", NULL, NULL, &err);
+	sqlite3_free(sql);
 
-    if (err) {
-        if (pzErrMsg) *pzErrMsg = utf8_to_bstr(err);
-        sqlite3_free(err);
-    }
-    return rc;
+	if (err) {
+		if (pzErrMsg) *pzErrMsg = utf8_to_variant(err);
+		sqlite3_free(err);
+	}
+	return rc;
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Prepared statements                                                */

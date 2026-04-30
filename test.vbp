@@ -1,6 +1,6 @@
 Type=Exe
-Reference=*\G{00020430-0000-0000-C000-000000000046}#2.0#0#..\..\..\..\Windows\SysWOW64\stdole2.tlb#OLE Automation
-Reference=*\G{5A664FC1-6ABF-4DCC-8EBB-2138A8703050}#1.0#0#sqlite4vb.dll#Sqllite library for VB6 from Sandsprite.com
+Reference=*\G{00020430-0000-0000-C000-000000000046}#2.0#0#C:\Windows\SysWOW64\stdole2.tlb#OLE Automation
+Reference=*\G{41855EC9-C63E-4293-AE63-40BB7B14D011}#1.0#0#sqlite4vb.dll#Sqllite library for VB6 from Sandsprite.com
 Form=Form1.frm
 Startup="Form1"
 HelpFile=""

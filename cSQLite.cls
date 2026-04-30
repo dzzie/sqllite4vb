@@ -76,24 +76,37 @@ Public Property Get Version() As String
     Version = api.sqlite3_libversion()
 End Property
 
-Public Sub OpenDB(ByVal sFilename As String)
-    If m_hDb <> 0 Then Err.Raise vbObjectError + 30100, "cSQLite.OpenDB", _
-        "already open (path=" & m_path & ")"
+Public Sub OpenDB(ByVal sFilename As String, _
+                  Optional ByVal readOnly As Boolean = False, _
+                  Optional ByVal createMissing As Boolean = True, _
+                  Optional ByVal timeout As Long = 5000)
+    Dim flags As Long
     Dim rc As Long
-    rc = api.sqlite3_open(sFilename, m_hDb)
-    If rc <> SQLITE_OK Then
-        Dim sErr As String
-        If m_hDb <> 0 Then sErr = api.sqlite3_errmsg(m_hDb)
-        If m_hDb <> 0 Then api.sqlite3_close m_hDb
-        m_hDb = 0
-        Err.Raise vbObjectError + 30000 + rc, "cSQLite.OpenDB", _
-            "open failed (rc=" & rc & "): " & sErr
-    End If
-    m_path = sFilename
+    Dim msg As String
 
-    ' Sensible defaults: a 5-second busy timeout makes shared-DB scenarios
-    ' much more forgiving without changing semantics.
-    api.sqlite3_busy_timeout m_hDb, 5000
+    If m_hDb <> 0 Then CloseDB
+
+    If readOnly Then
+        ' READONLY is mutually exclusive with READWRITE/CREATE — SQLite
+        ' will reject the combination. createMissing is ignored when
+        ' readOnly is True (you can't create a file you can't write to).
+        flags = SQLITE_OPEN_READONLY
+    Else
+        flags = SQLITE_OPEN_READWRITE
+        If createMissing Then flags = flags Or SQLITE_OPEN_CREATE
+    End If
+
+    rc = api.sqlite3_open_v2(sFilename, m_hDb, flags, vbNullString)
+    If rc <> SQLITE_OK Then
+        msg = api.sqlite3_errmsg(m_hDb)
+        api.sqlite3_close m_hDb
+        m_hDb = 0
+        Err.Raise vbObjectError + 30901, "cSQLite.OpenDB", _
+            "Open failed (" & rc & "): " & msg & " — " & sFilename
+    End If
+
+    m_path = sFilename
+    api.sqlite3_busy_timeout m_hDb, timeout
 End Sub
 
 Public Sub CloseDB()
@@ -102,6 +115,56 @@ Public Sub CloseDB()
         m_hDb = 0
         m_path = ""
     End If
+End Sub
+
+' Make a copy of this database to the given path. Uses VACUUM INTO,
+' which is atomic and produces a fully-defragmented copy in one shot.
+'
+' By default, refuses to overwrite an existing file — pass overwrite:=True
+' for rolling-backup scenarios where clobbering is expected.
+'
+' The backup is taken as of the current transaction state. If a transaction
+' is open on this connection, the backup reflects that transaction's view
+' of the database. Other connections writing concurrently will not affect
+' the snapshot.
+'
+' Requires SQLite 3.27 or later (2019).
+'
+' Note: there is an API for backing up a db with concurrent live connections
+'       but we did not go that route here. ask claude about sqlite3_backup_init / _step / _finish
+'
+Public Sub BackupDB(ByVal sDestPath As String, _
+                   Optional ByVal overwrite As Boolean = False)
+                   
+    If m_hDb = 0 Then
+        Err.Raise vbObjectError + 30902, "cSQLite.BackupDB", _
+            "Cannot back up — no database is open"
+    End If
+
+    If LenB(Dir$(sDestPath)) > 0 Then
+        If Not overwrite Then
+            Err.Raise vbObjectError + 30903, "cSQLite.BackupDB", _
+                "Destination already exists (pass overwrite:=True to replace): " & sDestPath
+        End If
+        ' Pre-delete — VACUUM INTO refuses to write to an existing file
+        ' regardless of our flag, so we have to clear it ourselves first.
+        On Error Resume Next
+        Kill sDestPath
+        If Err.Number <> 0 Then
+            Dim killErr As String: killErr = Err.Description
+            On Error GoTo 0
+            Err.Raise vbObjectError + 30904, "cSQLite.BackupDB", _
+                "Could not remove existing file: " & sDestPath & " — " & killErr
+        End If
+        On Error GoTo 0
+    End If
+
+    ' VACUUM INTO doesn't accept '?' bindings for the path — it's a SQL
+    ' literal. We need to single-quote and escape any embedded quotes.
+    Dim quotedPath As String
+    quotedPath = "'" & Replace$(sDestPath, "'", "''") & "'"
+
+    Execute "VACUUM INTO " & quotedPath
 End Sub
 
 Private Sub Class_Terminate()

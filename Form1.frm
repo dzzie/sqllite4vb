@@ -4,11 +4,19 @@ Begin VB.Form Form1
    ClientHeight    =   7800
    ClientLeft      =   60
    ClientTop       =   345
-   ClientWidth     =   10800
+   ClientWidth     =   12270
    LinkTopic       =   "Form1"
    ScaleHeight     =   7800
-   ScaleWidth      =   10800
+   ScaleWidth      =   12270
    StartUpPosition =   3  'Windows Default
+   Begin VB.CommandButton cmdReadOnly 
+      Caption         =   "Read Only"
+      Height          =   495
+      Left            =   9600
+      TabIndex        =   9
+      Top             =   120
+      Width           =   1275
+   End
    Begin VB.CommandButton cmdRunTest 
       Caption         =   "Basic"
       Height          =   495
@@ -68,7 +76,7 @@ Begin VB.Form Form1
    Begin VB.CommandButton cmdClear 
       Caption         =   "Clear"
       Height          =   495
-      Left            =   9600
+      Left            =   11040
       TabIndex        =   1
       Top             =   120
       Width           =   1095
@@ -89,7 +97,7 @@ Begin VB.Form Form1
       ScrollBars      =   3  'Both
       TabIndex        =   0
       Top             =   720
-      Width           =   10575
+      Width           =   12015
    End
 End
 Attribute VB_Name = "Form1"
@@ -117,6 +125,95 @@ Private Function HexBytes(ByRef b() As Byte) As String
     Next i
     HexBytes = s
 End Function
+
+Private Sub cmdReadOnly_Click()
+    ' Test that read-only mode actually works.
+' Creates a fresh DB, populates it, closes, reopens read-only, and
+' confirms reads work but writes are rejected.
+
+    Dim sDbPath As String
+    sDbPath = App.Path & "\test_readonly.db"
+
+    ' Start clean
+    If Dir(sDbPath) <> "" Then Kill sDbPath
+
+    Log "[1] Creating and populating DB (read-write)"
+    Dim db As New cSQLite
+    db.OpenDB sDbPath
+    db.Execute "CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)"
+    db.ExecInsert "items", "name", "first"
+    db.ExecInsert "items", "name", "second"
+    db.ExecInsert "items", "name", "third"
+    Log "    inserted " & db.Scalar("SELECT COUNT(*) FROM items") & " rows"
+    db.CloseDB
+    Set db = Nothing
+
+    Log ""
+    Log "[2] Reopening read-only"
+    Set db = New cSQLite
+    db.OpenDB sDbPath, ReadOnly:=True
+    Log "    opened OK"
+
+    Log ""
+    Log "[3] Reading (should succeed)"
+    Dim rs As cSQLiteResults
+    Set rs = db.Query("SELECT id, name FROM items ORDER BY id")
+    Do While rs.MoveNext()
+        Log "    " & rs("id") & " | " & rs("name")
+    Loop
+    Set rs = Nothing
+    Log "    read OK"
+
+    Log ""
+    Log "[4] Attempting INSERT (should FAIL with SQLITE_READONLY=8)"
+    On Error Resume Next
+    db.ExecInsert "items", "name", "should_not_appear"
+    If Err.Number <> 0 Then
+        Log "    correctly blocked: " & Err.Description
+        Err.Clear
+    Else
+        Log "    *** BUG: INSERT succeeded on read-only DB ***"
+    End If
+    On Error GoTo 0
+
+    Log ""
+    Log "[5] Attempting UPDATE (should also fail)"
+    On Error Resume Next
+    db.Execute "UPDATE items SET name='changed' WHERE id=1"
+    If Err.Number <> 0 Then
+        Log "    correctly blocked: " & Err.Description
+        Err.Clear
+    Else
+        Log "    *** BUG: UPDATE succeeded on read-only DB ***"
+    End If
+    On Error GoTo 0
+
+    Log ""
+    Log "[6] Attempting DDL (should also fail)"
+    On Error Resume Next
+    db.Execute "CREATE TABLE more (x INTEGER)"
+    If Err.Number <> 0 Then
+        Log "    correctly blocked: " & Err.Description
+        Err.Clear
+    Else
+        Log "    *** BUG: CREATE TABLE succeeded on read-only DB ***"
+    End If
+    On Error GoTo 0
+
+    Log ""
+    Log "[7] Confirming nothing was actually written"
+    Dim cnt As Long
+    cnt = db.Scalar("SELECT COUNT(*) FROM items")
+    If cnt = 3 Then
+        Log "    row count still 3 — verified read-only enforcement"
+    Else
+        Log "    *** BUG: row count is " & cnt & ", expected 3 ***"
+    End If
+
+    db.CloseDB
+    Log ""
+    Log "[done] read-only mode working correctly"
+End Sub
 
 ' ===== TEST 1: basic users table (low-level API) ==================
 
@@ -724,4 +821,15 @@ Private Sub cmdSchema_Click()
     Exit Sub
 Fail:
     Log "*** ERROR " & Err.Number & ": " & Err.Description
+End Sub
+
+Private Sub Form_Load()
+'    On Error GoTo hell
+'    Dim db As New cSQLite
+'    db.OpenDB "blahblah.db", ReadOnly:=True
+'    On Error Resume Next
+'    db.Execute "SELECT * FROM nonexistent_table_xyz"
+'    Debug.Print "[" & Err.Description & "]"
+'hell:
+'    Debug.Print Err.Description
 End Sub

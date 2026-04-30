@@ -173,10 +173,11 @@ Private Declare Function raw_errstr Lib "sqlite3_vb6.dll" _
     Alias "vb6_sqlite3_errstr" (ByVal rc As Long) As Variant
 
 ' Exec
-Private Declare Function raw_exec_simple Lib "sqlite3_vb6.dll" _
-    Alias "vb6_sqlite3_exec_simple" ( _
-    ByVal db As Long, ByVal pSql As Long, ByRef pErrMsg As String) As Long
-
+' NEW — correct:
+Private Declare Function sqlite3_exec_simple Lib "sqlite3_vb6.dll" _
+    Alias "vb6_sqlite3_exec_simple" _
+    (ByVal hDb As Long, ByVal sql As Long, ByRef errMsg As Variant) As Long
+    
 ' Prepare / step / reset / finalize
 Private Declare Function raw_prepare_v2 Lib "sqlite3_vb6.dll" _
     Alias "vb6_sqlite3_prepare_v2" ( _
@@ -338,9 +339,15 @@ Public Function sqlite3_errstr(ByVal rc As Long) As String
     sqlite3_errstr = VariantToString(raw_errstr(rc))
 End Function
 
-Public Function sqlite3_exec(ByVal hDb As Long, ByVal sSql As String, _
-                             Optional ByRef sErrMsg As String) As Long
-    sqlite3_exec = raw_exec_simple(hDb, StrPtr(sSql), sErrMsg)
+Public Function sqlite3_exec(ByVal hDb As Long, ByVal sql As String, _
+                             Optional ByRef sErr As String) As Long
+    Dim vErr As Variant
+    sqlite3_exec = sqlite3_exec_simple(hDb, StrPtr(sql), vErr)
+    If IsNull(vErr) Or IsEmpty(vErr) Then
+        sErr = ""
+    Else
+        sErr = CStr(vErr)
+    End If
 End Function
 
 Public Function sqlite3_prepare_v2(ByVal hDb As Long, ByVal sSql As String, _
