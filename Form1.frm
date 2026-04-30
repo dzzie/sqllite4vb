@@ -4,18 +4,26 @@ Begin VB.Form Form1
    ClientHeight    =   7800
    ClientLeft      =   60
    ClientTop       =   345
-   ClientWidth     =   12270
+   ClientWidth     =   13125
    LinkTopic       =   "Form1"
    ScaleHeight     =   7800
-   ScaleWidth      =   12270
+   ScaleWidth      =   13125
    StartUpPosition =   3  'Windows Default
+   Begin VB.CommandButton cmdInMem 
+      Caption         =   "In Mem"
+      Height          =   495
+      Left            =   10620
+      TabIndex        =   10
+      Top             =   120
+      Width           =   795
+   End
    Begin VB.CommandButton cmdReadOnly 
       Caption         =   "Read Only"
       Height          =   495
       Left            =   9600
       TabIndex        =   9
       Top             =   120
-      Width           =   1275
+      Width           =   795
    End
    Begin VB.CommandButton cmdRunTest 
       Caption         =   "Basic"
@@ -76,7 +84,7 @@ Begin VB.Form Form1
    Begin VB.CommandButton cmdClear 
       Caption         =   "Clear"
       Height          =   495
-      Left            =   11040
+      Left            =   11940
       TabIndex        =   1
       Top             =   120
       Width           =   1095
@@ -97,7 +105,7 @@ Begin VB.Form Form1
       ScrollBars      =   3  'Both
       TabIndex        =   0
       Top             =   720
-      Width           =   12015
+      Width           =   12855
    End
 End
 Attribute VB_Name = "Form1"
@@ -126,13 +134,105 @@ Private Function HexBytes(ByRef b() As Byte) As String
     HexBytes = s
 End Function
 
+Private Sub cmdInMem_Click()
+' Test in-memory database mode.
+' Confirms ":memory:" path with SQLITE_OPEN_MEMORY works for full
+' read-write usage, that data lives only for the lifetime of the
+' connection, and that the file system is untouched.
+    Log "[1] Opening :memory: database"
+    Dim db As New cSQLite
+    db.OpenDB ":memory:", , , SQLITE_OPEN_MEMORY
+    Log "    opened OK, version = " & db.Version
+
+    Log ""
+    Log "[2] Creating schema and inserting rows"
+    db.Execute "CREATE TABLE widgets (" & _
+        "id INTEGER PRIMARY KEY AUTOINCREMENT," & _
+        "name TEXT NOT NULL," & _
+        "qty INTEGER)"
+    db.ExecInsert "widgets", "name,qty", "sprocket", 100
+    db.ExecInsert "widgets", "name,qty", "flange", 250
+    db.ExecInsert "widgets", "name,qty", "grommet", 75
+    Log "    inserted " & db.Scalar("SELECT COUNT(*) FROM widgets") & " rows"
+
+    Log ""
+    Log "[3] Reading back"
+    Dim rs As cSQLiteResults
+    Set rs = db.Query("SELECT id, name, qty FROM widgets ORDER BY qty DESC")
+    Do While rs.MoveNext()
+        Log "    " & rs("id") & " | " & rs("name") & " | " & rs("qty")
+    Loop
+    Set rs = Nothing
+
+    Log ""
+    Log "[4] Aggregate query"
+    Log "    total qty = " & db.Scalar("SELECT SUM(qty) FROM widgets")
+    Log "    avg qty = " & db.Scalar("SELECT AVG(qty) FROM widgets")
+
+    Log ""
+    Log "[5] Transactions still work in memory"
+    db.BeginTrans
+    db.ExecInsert "widgets", "name,qty", "rollback_me", 999
+    Log "    inserted in trans, count = " & db.Scalar("SELECT COUNT(*) FROM widgets")
+    db.RollbackTrans
+    Log "    after rollback, count = " & db.Scalar("SELECT COUNT(*) FROM widgets")
+
+    Log ""
+    Log "[6] Verify no file was created"
+    If FileExists(":memory:") Then
+        Log "    *** BUG: a file named :memory: was actually created ***"
+        Kill ":memory:"
+    Else
+        Log "    confirmed — no file on disk"
+    End If
+    If FileExists(App.path & "\:memory:") Then
+        Log "    *** BUG: file in app dir ***"
+    End If
+
+    Log ""
+    Log "[7] Closing — data should evaporate"
+    db.CloseDB
+    Set db = Nothing
+
+    Log ""
+    Log "[8] Reopening :memory: gives a fresh empty DB"
+    Set db = New cSQLite
+    db.OpenDB ":memory:", , , , SQLITE_OPEN_MEMORY
+    Dim tbl As Variant
+    Dim sch As New cSQLiteSchema
+    sch.AttachDb db
+    Dim tableCount As Long
+    For Each tbl In sch.ListTables
+        tableCount = tableCount + 1
+        Log "    *** unexpected table: " & tbl & " ***"
+    Next
+    If tableCount = 0 Then _
+        Log "    confirmed — fresh DB has no user tables"
+    db.CloseDB
+
+    Log ""
+    Log "[done] in-memory mode working correctly"
+End Sub
+
+
+Function FileExists(path As String) As Boolean
+  On Error GoTo hell
+    
+  If Len(path) = 0 Then Exit Function
+  If Right(path, 1) = "\" Then Exit Function
+  If Dir(path, vbHidden Or vbNormal Or vbReadOnly Or vbSystem) <> "" Then FileExists = True
+  
+  Exit Function
+hell: FileExists = False
+End Function
+
 Private Sub cmdReadOnly_Click()
     ' Test that read-only mode actually works.
 ' Creates a fresh DB, populates it, closes, reopens read-only, and
 ' confirms reads work but writes are rejected.
 
     Dim sDbPath As String
-    sDbPath = App.Path & "\test_readonly.db"
+    sDbPath = App.path & "\test_readonly.db"
 
     ' Start clean
     If Dir(sDbPath) <> "" Then Kill sDbPath
@@ -223,7 +323,7 @@ Private Sub cmdRunTest_Click()
 
     Dim hDb As Long, hStmt As Long, rc As Long
     Dim sDbPath As String
-    sDbPath = App.Path & "\test_users.db"
+    sDbPath = App.path & "\test_users.db"
 
     Log "SQLite version: " & sqlite3_libversion() & _
         "  (number=" & sqlite3_libversion_number() & ")"
@@ -333,7 +433,7 @@ Private Sub cmdUnicode_Click()
 
     Dim hDb As Long, hStmt As Long, rc As Long
     Dim sDbPath As String
-    sDbPath = App.Path & "\test_unicode.db"
+    sDbPath = App.path & "\test_unicode.db"
     If Dir(sDbPath) <> "" Then Kill sDbPath
 
     rc = sqlite3_open(sDbPath, hDb)
@@ -403,7 +503,7 @@ Private Sub cmdTxn_Click()
 
     Dim hDb As Long, hStmt As Long, rc As Long
     Dim sDbPath As String
-    sDbPath = App.Path & "\test_txn.db"
+    sDbPath = App.path & "\test_txn.db"
     If Dir(sDbPath) <> "" Then Kill sDbPath
 
     rc = sqlite3_open(sDbPath, hDb): If rc <> SQLITE_OK Then GoTo Fail
@@ -450,7 +550,7 @@ Private Sub cmdBlob_Click()
 
     Dim hDb As Long, hStmt As Long, rc As Long
     Dim sDbPath As String
-    sDbPath = App.Path & "\test_blob.db"
+    sDbPath = App.path & "\test_blob.db"
     If Dir(sDbPath) <> "" Then Kill sDbPath
 
     rc = sqlite3_open(sDbPath, hDb): If rc <> SQLITE_OK Then GoTo Fail
@@ -494,13 +594,13 @@ Private Sub cmdClasses_Click()
     Log "=== Class API test (cSQLite / cSQLiteStatement / cSQLiteResults) ===" & vbCrLf
 
     Dim sDbPath As String
-    sDbPath = App.Path & "\test_classes.db"
+    sDbPath = App.path & "\test_classes.db"
     If Dir(sDbPath) <> "" Then Kill sDbPath
 
     ' --- Open & create -------------------------------------------------
     Dim db As New cSQLite
     db.OpenDB sDbPath
-    Log "Opened: version=" & db.Version & "  path=" & db.Path
+    Log "Opened: version=" & db.Version & "  path=" & db.path
     Log ""
 
     db.Execute _
@@ -623,7 +723,7 @@ Private Sub cmdMaint_Click()
     Log "=== Maintenance / compaction test ===" & vbCrLf
 
     Dim sDbPath As String
-    sDbPath = App.Path & "\test_maint.db"
+    sDbPath = App.path & "\test_maint.db"
     If Dir(sDbPath) <> "" Then Kill sDbPath
 
     Dim db As New cSQLite
@@ -731,7 +831,7 @@ Private Sub cmdSchema_Click()
     Log "=== Schema introspection test ===" & vbCrLf
 
     Dim sDbPath As String
-    sDbPath = App.Path & "\test_schema.db"
+    sDbPath = App.path & "\test_schema.db"
     If Dir(sDbPath) <> "" Then Kill sDbPath
 
     Dim db As New cSQLite

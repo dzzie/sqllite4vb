@@ -121,7 +121,9 @@ Public Enum SQLiteConsts
     SQLITE_TEXT = 3
     SQLITE_BLOB = 4
     SQLITE_NULL = 5
+End Enum
 
+Public Enum sqlLiteOpenConst
     ' --- sqlite3_open_v2 flags (bitwise OR-able) ---
     SQLITE_OPEN_READONLY = &H1&
     SQLITE_OPEN_READWRITE = &H2&

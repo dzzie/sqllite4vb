@@ -1,7 +1,7 @@
 modSQLite = 52, 52, 819, 588, 
-cSQLite = 78, 78, 845, 614, 
+cSQLite = 78, 78, 845, 614, Z
 cSQLiteStatement = 104, 104, 871, 640, 
 cSQLiteResults = 156, 156, 923, 692, 
-cSQLiteSchema = 0, 0, 0, 0, C
+cSQLiteSchema = 182, 182, 949, 718, 
 cSQLiteColumn = 130, 130, 897, 666, 
-cSQLiteAPI = 26, 26, 793, 562, Z
+cSQLiteAPI = 26, 26, 793, 562, C

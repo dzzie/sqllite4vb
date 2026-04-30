@@ -79,7 +79,10 @@ End Property
 Public Sub OpenDB(ByVal sFilename As String, _
                   Optional ByVal readOnly As Boolean = False, _
                   Optional ByVal createMissing As Boolean = True, _
-                  Optional ByVal timeout As Long = 5000)
+                  Optional ByVal extraFlags As sqlLiteOpenConst = 0, _
+                  Optional ByVal timeout As Long = 5000 _
+                  )
+                  
     Dim flags As Long
     Dim rc As Long
     Dim msg As String
@@ -96,6 +99,8 @@ Public Sub OpenDB(ByVal sFilename As String, _
         If createMissing Then flags = flags Or SQLITE_OPEN_CREATE
     End If
 
+    If extraFlags <> 0 Then flags = flags Or extraFlags
+    
     rc = api.sqlite3_open_v2(sFilename, m_hDb, flags, vbNullString)
     If rc <> SQLITE_OK Then
         msg = api.sqlite3_errmsg(m_hDb)
