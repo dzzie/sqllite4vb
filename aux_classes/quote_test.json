@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "columns": [
+    {"name": "id", "type": 5},
+    {"name": "label", "type": 5}
+  ],
+  "rows": [
+    [1, "has \"quotes\" in it"],
+    [2, "path C:\\temp\\file.txt"],
+    [3, "O'Brien said \"hi\""],
+    [4, "json: {\"k\":\"v\"}"],
+    [5, "trailing slash\\"],
+    [6, ""],
+    [7, "line1\r\nline2\ttabbed"],
+    [8, "O'Brien"],
+    [9, "''; DROP TABLE users;--"],
+    [10, "it's a 'test'"],
+    [11, "'wrapped'"]
+  ]
+}

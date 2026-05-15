@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "columns": [
+    {"name": "label", "type": 3},
+    {"name": "payload", "type": 4}
+  ],
+  "rows": [
+    ["hello-ascii", {"$blob":"48656c6c6f"}],
+    ["png-header", {"$blob":"89504e470d0a1a0a"}],
+    ["zero-fill", {"$blob":"00000000"}],
+    ["mixed", {"$blob":"deadbeefcafebabe"}]
+  ]
+}
